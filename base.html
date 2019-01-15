@@ -37,6 +37,7 @@
         }
     </script>
     <script>
+        // Define the radius of one hex tile
         const hexSize = 20;
 
         // The application will create a renderer using WebGL, if possible,
@@ -45,8 +46,6 @@
         const app = new PIXI.Application(1600, 900, { antialias: true });
         app.renderer.backgroundColor = 0xAAAAAA;
 
-        // The application will create a canvas element for you that you
-        // can then insert into the DOM
         document.body.appendChild(app.view);
 
         // load the texture we need
@@ -73,6 +72,7 @@
         });*/
 
         $.get( 'maps/King Island.isl', function( data ) {
+            // Split the file up in blocks of 8 bytes
             let blocks = [];
             for(let i = 0; i < data.length/4; i++)
             {
@@ -91,33 +91,37 @@
 
 
             const colors = [0xFF2222, 0x22FF22, 0x2222FF, 0xFFFF22, 0x22FFFF, 0xFF22FF];
-            const line2OffsetX = hexSize*cos60x*3;
+            // Height and width offsets for each alternating (even/odd) line
+            const line1OffsetX = hexSize*cos60x*3;
             const line2OffsetY = hexSize*sin60y;
+            // Main offset of grid (offset from top left corner)
             const mainOffset = [15+hexSize*2, 20+line2OffsetY+1];
 
+            // the map information starts at byteBlock 39
             let readCounter = 39;
 
             // there's 22 lines on the screen
             for(let i = 0; i < 22; i++){
                 // even and odd lines
                 for(let k = 0; k < 2; k++) {
-                    // for some reason there 17 lines of data, even though there is a max of 15 width
+                    // for some reason there 17 rows of data, even though there is a max of 15 tiles width
                     for (let j = 0; j < 17; j++) {
                         let hexOffsetX = hexSize * 3 * j;
                         let lineOffsetY = sin60y * hexSize * i * 2;
                         let color = 0x267221;//colors[Math.floor(Math.random() * colors.length)];
 
+                        // Check if this byteBlock needs to contain a tile (ugly hack, for now...)
                         if(blocks[readCounter] === '01000000') {
                             if(k === 1){
                                 app.stage.addChild(drawHex(mainOffset[0] + hexOffsetX, mainOffset[1] + lineOffsetY + line2OffsetY, hexSize, color));
                             }else{
-                                app.stage.addChild(drawHex(mainOffset[0] + hexOffsetX + line2OffsetX, mainOffset[1] + lineOffsetY, hexSize, color));
+                                app.stage.addChild(drawHex(mainOffset[0] + hexOffsetX + line1OffsetX, mainOffset[1] + lineOffsetY, hexSize, color));
                             }
                         }
                         readCounter++;
                     }
                 }
-                // every 2 lines there's a 'null' terminator
+                // every 2 lines there's a 'null' terminator, just ignore it
                 readCounter++;
             }
         });
