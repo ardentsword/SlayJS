@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Slay JS</title>
+</head>
+<body>
+
+    <script src="node_modules/pixi.js/dist/pixi.js"></script>
+    <script src="node_modules/jquery/dist/jquery.min.js"></script>
+    <script src="draw/file.js"></script>
+    <script>
+        // define constants for creating the hexagon
+        const cos60x = 1/2;
+        const sin60y = Math.sqrt(3)/2;
+
+        function drawHex(x, y, size, color) {
+            let hex = new PIXI.Graphics();
+            hex.beginFill(color); //0x66FF33
+            hex.lineStyle(1, 0x000000, 1);
+
+            let path = [
+                size, 0,
+                size*cos60x, size*sin60y,
+                -size*cos60x, size*sin60y,
+                -size, 0,
+                -size*cos60x, -size*sin60y,
+                size*cos60x, -size*sin60y,
+                size, 0,
+            ];
+
+            hex.drawPolygon(path);
+            hex.endFill();
+            hex.x = x-size;
+            hex.y = y;
+            return hex;
+        }
+    </script>
+    <script>
+        const hexSize = 20;
+
+        // The application will create a renderer using WebGL, if possible,
+        // with a fallback to a canvas render. It will also setup the ticker
+        // and the root stage PIXI.Container
+        const app = new PIXI.Application(1600, 900, { antialias: true });
+        app.renderer.backgroundColor = 0xAAAAAA;
+
+        // The application will create a canvas element for you that you
+        // can then insert into the DOM
+        document.body.appendChild(app.view);
+
+        // load the texture we need
+        /*PIXI.loader.add('bunny', 'assets/arrow.png').load((loader, resources) => {
+            // This creates a texture from a 'bunny.png' image
+            const bunny = new PIXI.Sprite(resources.bunny.texture);
+
+            // Setup the position of the bunny
+            bunny.x = app.renderer.width / 2;
+            bunny.y = app.renderer.height / 2;
+
+            // Rotate around the center
+            bunny.anchor.x = 0.5;
+            bunny.anchor.y = 0.5;
+
+            // Add the bunny to the scene we are building
+            app.stage.addChild(bunny);
+
+            // Listen for frame updates
+            app.ticker.add(() => {
+                // each frame we spin the bunny around a bit
+                bunny.rotation += 0.01;
+            });
+        });*/
+
+        $.get( 'maps/King Island.isl', function( data ) {
+            let blocks = [];
+            for(let i = 0; i < data.length/4; i++)
+            {
+                let char1 = data.charCodeAt(4*i).toString(16);
+                let char2 = data.charCodeAt(4*i+1).toString(16);
+                let char3 = data.charCodeAt(4*i+2).toString(16);
+                let char4 = data.charCodeAt(4*i+3).toString(16);
+                blocks = blocks.concat(
+                    ("00" + char1).slice(-2) +
+                    ("00" + char2).slice(-2) +
+                    ("00" + char3).slice(-2) +
+                    ("00" + char4).slice(-2)
+                );
+            }
+            console.log(blocks);
+
+
+            const colors = [0xFF2222, 0x22FF22, 0x2222FF, 0xFFFF22, 0x22FFFF, 0xFF22FF];
+            const line2OffsetX = hexSize*cos60x*3;
+            const line2OffsetY = hexSize*sin60y;
+            const mainOffset = [15+hexSize*2, 20+line2OffsetY+1];
+
+            let readCounter = 39;
+
+            // there's 22 lines on the screen
+            for(let i = 0; i < 22; i++){
+                // even and odd lines
+                for(let k = 0; k < 2; k++) {
+                    // for some reason there 17 lines of data, even though there is a max of 15 width
+                    for (let j = 0; j < 17; j++) {
+                        let hexOffsetX = hexSize * 3 * j;
+                        let lineOffsetY = sin60y * hexSize * i * 2;
+                        let color = 0x267221;//colors[Math.floor(Math.random() * colors.length)];
+
+                        if(blocks[readCounter] === '01000000') {
+                            if(k === 1){
+                                app.stage.addChild(drawHex(mainOffset[0] + hexOffsetX, mainOffset[1] + lineOffsetY + line2OffsetY, hexSize, color));
+                            }else{
+                                app.stage.addChild(drawHex(mainOffset[0] + hexOffsetX + line2OffsetX, mainOffset[1] + lineOffsetY, hexSize, color));
+                            }
+                        }
+                        readCounter++;
+                    }
+                }
+                // every 2 lines there's a 'null' terminator
+                readCounter++;
+            }
+        });
+    </script>
+</body>
+</html>

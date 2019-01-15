@@ -1,0 +1,7 @@
+# Ignore
+maps/*
+node_modules/*
+.idea/*
+
+# Allow
+!maps/.gitkeep
